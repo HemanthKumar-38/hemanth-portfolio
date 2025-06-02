@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Snake Monster Cursor</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #42bad5;
+      cursor: none;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let width = canvas.width = window.innerWidth;
+let height = canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+});
+
+const segments = 80;
+const segLength = 10;
+const snake = Array.from({ length: segments }, () => ({
+  x: width / 2,
+  y: height / 2,
+  angle: 0
+}));
+
+const mouse = { x: width / 2, y: height / 2 };
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+let t = 0;
+
+function drawBone(x1, y1, x2, y2, angle, index) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+
+  // Draw ribs
+  const ribs = 4;
+  for (let i = 1; i < ribs; i++) {
+    const ratio = i / ribs;
+    const px = x1 + (x2 - x1) * ratio;
+    const py = y1 + (y2 - y1) * ratio;
+    const ribAngle = angle + Math.PI / 2;
+    const ribLength = 10;
+    ctx.beginPath();
+    ctx.moveTo(px + Math.cos(ribAngle) * ribLength, py + Math.sin(ribAngle) * ribLength);
+    ctx.lineTo(px - Math.cos(ribAngle) * ribLength, py - Math.sin(ribAngle) * ribLength);
+    ctx.stroke();
+  }
+
+  // Legs with motion
+  if (index % 10 === 0) {
+    drawLegs(x1, y1, angle, index);
+  }
+}
+
+function drawLegs(x, y, angle, index) {
+  const length = 18;
+  const wiggle = Math.sin(t * 0.1 + index * 0.2) * 0.3;
+
+  for (let side of [-1, 1]) {
+    const a = angle + side * (Math.PI / 3 + wiggle);
+    const lx = x + Math.cos(a) * length;
+    const ly = y + Math.sin(a) * length;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(lx, ly);
+    ctx.stroke();
+
+    // Claws
+    for (let offset of [-0.2, 0.2]) {
+      const cx = lx + Math.cos(a + offset) * 6;
+      const cy = ly + Math.sin(a + offset) * 6;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.lineTo(cx, cy);
+      ctx.stroke();
+    }
+  }
+}
+
+function animate() {
+  t++;
+  ctx.clearRect(0, 0, width, height);
+  let leadX = mouse.x;
+  let leadY = mouse.y;
+
+  for (let i = 0; i < snake.length; i++) {
+    const seg = snake[i];
+    const dx = leadX - seg.x;
+    const dy = leadY - seg.y;
+    seg.angle = Math.atan2(dy, dx);
+    seg.x = leadX - Math.cos(seg.angle) * segLength;
+    seg.y = leadY - Math.sin(seg.angle) * segLength;
+
+    drawBone(seg.x, seg.y, leadX, leadY, seg.angle, i);
+
+    leadX = seg.x;
+    leadY = seg.y;
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
